@@ -21,6 +21,15 @@ In order for the plugin to send motion data over VMC, you'll need to provide the
 
 If you're having trouble with a VMC receiver not getting your movement data, this may be because the reciever doesn't support bundling VMC message. Try checking off "Don't Bundle Packets" to see if ther is any improvement.
 
+### VMC Receiver Behaviour
+The JayoVMCPlugin.dll file also contains a "VMC Receiver Manager" behaviour that can be used to accept incoming VMC messages and apply them to a model.  This can be used in your model project in Unity to "preview" your model's movement' before exporting, or to create VNyan objects that contain VMC-Controllable Characters.  Using the Behaviour is pretty simple:
+1. Create a new GameObject
+2. Attach the VMCReceiverManager behaviour to the GameObject
+3. Place a VMC-compatable model (VRM, vsfavatar, etc) into the scene as a _child_ of the GameObject
+4. Set the Port number and target Model object for the VMCReceiverManager in the Inspector
+5. Run the scene!
+6. If you're creating a Custom Object to use in VNyan, select the GameObject you've created, and use the VNyan SDK to "Export Custom Object"
+
 ## Development
 (Almost) Everything you'll need to develop a fork of this plugin (or some other plugin based on this one)!  The main VS project contains all of the code for the plugin DLL, and the `dist` folder contains a `unitypackage` that can be dragged into a project to build and modify the UI and export the modified Custom Object.
 
