@@ -31,7 +31,7 @@ namespace JayoVMCPlugin
         private string currentVersion = "v0.1.0";
         private string latestVersion = "";
         private bool updateAvailable = false;
-        private string repoName = "jayo-exe/JayoOBSPlugin";
+        private string repoName = "jayo-exe/JayoVMCPlugin";
         private GameObject versionText;
         private GameObject updateText;
         private GameObject updateButton;
