@@ -5,7 +5,8 @@ A VNyan Plugin that allows you to send your vNyan Avatar's motion data over VMC 
 # Table of contents
 1. [Installation](#installation)
 2. [Usage](#usage)
-    1. [Connecting to OBS](#connecting-to-obs)
+    1. [Connecting to VMC](#connecting-to-vmc)
+    2. [VMC Receiver Behaviour](#vmc-receiver-behaviour)
 3. [Development](#development)
 
 ## Installation
