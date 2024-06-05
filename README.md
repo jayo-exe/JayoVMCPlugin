@@ -5,7 +5,8 @@ A VNyan Plugin that allows you to send your vNyan Avatar's motion data over VMC 
 # Table of contents
 1. [Installation](#installation)
 2. [Usage](#usage)
-    1. [Connecting to OBS](#connecting-to-obs)
+    1. [Connecting to VMC](#connecting-to-vmc)
+    2. [VMC Receiver Behaviour](#vmc-receiver-behaviour)
 3. [Development](#development)
 4. [Special Thanks](#special-thanks)
 
@@ -14,7 +15,7 @@ A VNyan Plugin that allows you to send your vNyan Avatar's motion data over VMC 
 2. Extract the contents of the ZIP file _directly into your VNyan installation folder_.  This will add the plugin files to yor VNyan `Item\Assemblies` folders.
 3. Start up VNyan. Once it loads, confirm that a button for the plugin now exists in your Plugins window!
 
-If the plugin isn't listen in the Plugins panel, 'Open the VNyan Settings window, go to the "Misc" section, and ensure that **Allow 3rd Party Mods/Plugins** is enabled. This is required for this plugin  (or any plugin) to function correctly
+**IMPORTANT:** If the plugin isn't listed in the Plugins panel, 'Open the VNyan Settings window, go to the "Misc" section, and ensure that **Allow 3rd Party Mods/Plugins** is enabled. This is required for this plugin  (or any plugin) to function correctly
 
 ## Usage
 ### Connecting to VMC
