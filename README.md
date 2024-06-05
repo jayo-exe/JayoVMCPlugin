@@ -7,6 +7,7 @@ A VNyan Plugin that allows you to send your vNyan Avatar's motion data over VMC 
 2. [Usage](#usage)
     1. [Connecting to OBS](#connecting-to-obs)
 3. [Development](#development)
+4. [Special Thanks](#special-thanks)
 
 ## Installation
 1. Grab the ZIP file from the [latest release](https://github.com/jayo-exe/JayoVMCPlugin/releases/latest) of the plugin.
@@ -36,3 +37,10 @@ The JayoVMCPlugin.dll file also contains a "VMC Receiver Manager" behaviour that
 It's worth noting that per VNyan's requirements, this plugni in built under **Unity 2020.3.40f1** , so you'll need to develop on this version to maintain compatability with VNyan.
 You'll also need the [VNyan SDK](https://suvidriel.itch.io/vnyan) imported into your project for it to function properly.
 Your Visual C# project will need to mave the paths to all dependencies updated to match their locations on your machine.  Most should point to Unity Engine libraries for the correct Engine version **2020.3.40f1**.
+
+## Special Thanks
+Suvidriel for building and maintaining VNyan (and answering my endless questions)
+
+sh-akira and all of the contributors to the VMC protocol
+
+Redd for collaboration in testing, QA, and debugging 

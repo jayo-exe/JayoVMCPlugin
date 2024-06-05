@@ -28,7 +28,7 @@ namespace JayoVMCPlugin
         private InputField PortInput;
         private InputField AddressInput;
 
-        private string currentVersion = "v0.1.0";
+        private string currentVersion = "v0.2.0";
         private string latestVersion = "";
         private bool updateAvailable = false;
         private string repoName = "jayo-exe/JayoVMCPlugin";

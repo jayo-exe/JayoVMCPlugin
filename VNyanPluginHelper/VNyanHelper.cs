@@ -32,7 +32,7 @@ namespace JayoVMCPlugin.VNyanPluginHelper
                 {
                     Debug.Log($"Instantiating Test Harness");
                     harnessObject = new GameObject("__VNyanTestHarness");
-                
+
                 }
 
                 if (GameObject.FindObjectOfType<EventSystem>() == null)
@@ -40,7 +40,7 @@ namespace JayoVMCPlugin.VNyanPluginHelper
                     var eventSystem = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
                 }
 
-                
+
 
 
                 var canvasObject = GameObject.Find("__VNyanTestHarness/__VNyanTestCanvas");
@@ -91,7 +91,8 @@ namespace JayoVMCPlugin.VNyanPluginHelper
             if (!(VNyanInterface.VNyanInterface.VNyanParameter == null))
             {
                 VNyanInterface.VNyanInterface.VNyanParameter.setVNyanParameterFloat(parameterName, value);
-            } else
+            }
+            else
             {
                 testHarness.setFloatParameter(parameterName, value);
             }
@@ -103,7 +104,8 @@ namespace JayoVMCPlugin.VNyanPluginHelper
             if (!(VNyanInterface.VNyanInterface.VNyanParameter == null))
             {
                 VNyanInterface.VNyanInterface.VNyanParameter.setVNyanParameterString(parameterName, value);
-            } else
+            }
+            else
             {
                 testHarness.setStringParameter(parameterName, value);
             }
@@ -114,7 +116,8 @@ namespace JayoVMCPlugin.VNyanPluginHelper
             if (!(VNyanInterface.VNyanInterface.VNyanParameter == null))
             {
                 return VNyanInterface.VNyanInterface.VNyanParameter.getVNyanParameterFloat(parameterName);
-            } else
+            }
+            else
             {
                 return testHarness.getFloatParameter(parameterName);
             }
@@ -125,7 +128,8 @@ namespace JayoVMCPlugin.VNyanPluginHelper
             if (!(VNyanInterface.VNyanInterface.VNyanParameter == null))
             {
                 return VNyanInterface.VNyanInterface.VNyanParameter.getVNyanParameterString(parameterName);
-            } else
+            }
+            else
             {
                 return testHarness.getStringParameter(parameterName);
             }
@@ -140,29 +144,43 @@ namespace JayoVMCPlugin.VNyanPluginHelper
                 Debug.Log($"Instantiating Window Prefab");
                 // Create a window that will show when the button in plugins window is clicked
                 return (GameObject)VNyanInterface.VNyanInterface.VNyanUI.instantiateUIPrefab(windowPrefab);
-            } else {
+            }
+            else
+            {
                 testHarness.registerPluginButton(buttonText, pluginInstance);
                 Debug.Log($"(Test Mode) Instantiating Window Prefab");
                 GameObject window = GameObject.Instantiate(windowPrefab);
                 window.transform.SetParent(testCanvasObject.transform);
                 return window;
             }
-                
-            
-        }
 
-        //
+
+        }
 
         public GameObject getAvatarObject()
         {
             if (!(VNyanInterface.VNyanInterface.VNyanAvatar == null))
             {
-                
+
                 return VNyanInterface.VNyanInterface.VNyanAvatar.getAvatarObject();
-            } else
+            }
+            else
             {
                 //TODO:: Some sort of handling/simulation for the devkit
                 return null;
+            }
+        }
+
+        public void registerTriggerListener(ITriggerHandler triggerHandler)
+        {
+            if (!(VNyanInterface.VNyanInterface.VNyanTrigger == null))
+            {
+                VNyanInterface.VNyanInterface.VNyanTrigger.registerTriggerListener(triggerHandler);
+            }
+            else
+            {
+                //TODO:: Some sort of handling/simulation for the devkit
+                return;
             }
         }
 
@@ -193,16 +211,16 @@ namespace JayoVMCPlugin.VNyanPluginHelper
             }
         }
 
-        public void setAvatarBlendshapes(Dictionary<string,float> blendshapes)
+        public void setAvatarBlendshapes(Dictionary<string, float> blendshapes)
         {
             if (!(VNyanInterface.VNyanInterface.VNyanAvatar == null))
             {
 
-                foreach(KeyValuePair<string,float> blendshape in blendshapes)
+                foreach (KeyValuePair<string, float> blendshape in blendshapes)
                 {
                     VNyanInterface.VNyanInterface.VNyanAvatar.setBlendshapeOverride(blendshape.Key, blendshape.Value);
                 }
-                
+
             }
             else
             {
@@ -216,7 +234,9 @@ namespace JayoVMCPlugin.VNyanPluginHelper
             if (!(VNyanInterface.VNyanInterface.VNyanSettings == null))
             {
                 return VNyanInterface.VNyanInterface.VNyanSettings.loadSettings(fileName);
-            } else {
+            }
+            else
+            {
                 return testHarness.loadPluginSettingsData(fileName);
             }
         }
@@ -226,7 +246,9 @@ namespace JayoVMCPlugin.VNyanPluginHelper
             if (!(VNyanInterface.VNyanInterface.VNyanSettings == null))
             {
                 VNyanInterface.VNyanInterface.VNyanSettings.saveSettings(fileName, pluginSettingsData);
-            } else {
+            }
+            else
+            {
                 testHarness.savePluginSettingsData(fileName, pluginSettingsData);
             }
         }

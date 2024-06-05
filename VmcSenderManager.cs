@@ -69,7 +69,12 @@ namespace JayoVMCPlugin
 
             if (avatar != null && avatar != lastAvatar)
             {
+                Debug.Log($"avatar object is {avatar.name}");
                 animator = avatar.GetComponent<Animator>();
+                if(animator == null)
+                {
+                    Debug.Log($"animator not found for {avatar.name}");
+                }
                 lastAvatar = avatar;
             }
 
@@ -82,8 +87,8 @@ namespace JayoVMCPlugin
 
             Bundle boneBundle = new Bundle(Timestamp.Now);
             Bundle blendshapeBundle = new Bundle(Timestamp.Now);
-            var rootNode = avatar.transform.Find("Root");
-            
+            var rootNode = animator.GetBoneTransform(HumanBodyBones.Hips); //probably this
+
             sendVMC(new Message("/VMC/Ext/Root/Pos",
                "root",
 
@@ -97,12 +102,13 @@ namespace JayoVMCPlugin
                 rootNode.rotation.w
             ));
 
-
             foreach (HumanBodyBones bone in System.Enum.GetValues(typeof(HumanBodyBones)))
             {
                 if (bone == HumanBodyBones.LastBone) continue;
+                if (bone == HumanBodyBones.Hips) continue;
 
                 ///VMC/Ext/Bone/Pos (string){name} (float){p.x} (float){p.y} (float){p.z} (float){q.x} (float){q.y} (float){q.z} (float){q.w}
+
                 Transform boneTransform = animator.GetBoneTransform(bone);
                 if (boneTransform != null)
                 {
@@ -128,12 +134,10 @@ namespace JayoVMCPlugin
                     }
                 }
             }
-
             if (!noBundle)
             {
                 sendVMC(boneBundle);
             }
-
             foreach (KeyValuePair<string, float> blendshape in blendshapes)
             {
                 var blendMessage = new Message("/VMC/Ext/Blend/Val", blendshape.Key, blendshape.Value);
@@ -146,7 +150,6 @@ namespace JayoVMCPlugin
                 }
                 
             }
-
             if (noBundle)
             {
                 sendVMC(new Message("/VMC/Ext/Blend/Apply"));
@@ -155,7 +158,6 @@ namespace JayoVMCPlugin
             {
                 blendshapeBundle.Add(new Message("/VMC/Ext/Blend/Apply"));
             }
-            
 
             if (!noBundle)
             {

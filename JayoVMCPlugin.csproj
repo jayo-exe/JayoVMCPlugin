@@ -5,12 +5,12 @@
   </PropertyGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Command="copy &quot;$(TargetDir)JayoVMCPlugin.dll&quot; &quot;$(TargetDir)..\..\..\..\..\..\..\MidiPlugin\Assets\JayoVmcPlugin\Plugins&quot; /Y" />
+		<Exec Command="copy &quot;$(TargetDir)JayoVMCPlugin.dll&quot; &quot;$(TargetDir)..\..\..\..\..\..\..\VNyanPlugins\Assets\JayoVmcPlugin\Plugins&quot; /Y" />
 	</Target>
 
 	<ItemGroup>
 	  <Reference Include="Assembly-CSharp">
-	    <HintPath>E:\vNyan\VNyan_Data\Managed\Assembly-CSharp.dll</HintPath>
+	    <HintPath>E:\VNyanBeta\VNyan_Data\Managed\Assembly-CSharp.dll</HintPath>
 	  </Reference>
 	  <Reference Include="Newtonsoft.Json">
 	    <HintPath>E:\vNyan\VNyan_Data\Managed\Newtonsoft.Json.dll</HintPath>
@@ -49,7 +49,7 @@
 	    <HintPath>E:\vNyan\VNyan_Data\Managed\uOSC.Runtime.dll</HintPath>
 	  </Reference>
 	  <Reference Include="VNyanInterface">
-	    <HintPath>E:\vNyan\VNyan_Data\Managed\VNyanInterface.dll</HintPath>
+	    <HintPath>E:\VNyanBeta\VNyan_Data\Managed\VNyanInterface.dll</HintPath>
 	  </Reference>
 	  <Reference Include="VRM">
 	    <HintPath>E:\vNyan\VNyan_Data\Managed\VRM.dll</HintPath>

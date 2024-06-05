@@ -15,6 +15,7 @@ namespace JayoVMCPlugin
         public int receiverPort;
 
         public bool AnchorToStage;
+        public bool BoneRotationsOnly;
 
         private Animator animator = null;
         private VRMBlendShapeProxy blendShapeProxy = null;
@@ -114,7 +115,11 @@ namespace JayoVMCPlugin
                         var t = animator.GetBoneTransform(bone);
                         if (t != null)
                         {
-                            t.localPosition = pos;
+                            if(!BoneRotationsOnly)
+                            {
+                                t.localPosition = pos;
+                            }
+                            
                             t.localRotation = rot;
                         }
                     }
