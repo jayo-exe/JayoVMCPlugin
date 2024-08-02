@@ -162,7 +162,7 @@ namespace JayoVMCPlugin.VNyanPluginHelper
             if (!(VNyanInterface.VNyanInterface.VNyanAvatar == null))
             {
 
-                return VNyanInterface.VNyanInterface.VNyanAvatar.getAvatarObject();
+                return VNyanInterface.VNyanInterface.VNyanAvatar.getAvatarObject() as GameObject;
             }
             else
             {

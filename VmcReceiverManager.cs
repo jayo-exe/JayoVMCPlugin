@@ -70,7 +70,7 @@ namespace JayoVMCPlugin
             if (Model != null && OldModel != Model)
             {
                 animator = Model.GetComponent<Animator>();
-                RootNode = Model.transform.Find("Root").gameObject;
+                RootNode = animator.GetBoneTransform(HumanBodyBones.Hips).gameObject;
                 blendShapeProxy = Model.GetComponent<VRMBlendShapeProxy>();
                 if (blendShapeProxy != null)
                 {
@@ -107,7 +107,7 @@ namespace JayoVMCPlugin
                 HumanBodyBones bone;
                 if (Enum.TryParse<HumanBodyBones>((string)message.values[0], out bone))
                 {
-                    if ((animator != null) && (bone != HumanBodyBones.LastBone))
+                    if ((animator != null) && (bone != HumanBodyBones.LastBone) && (bone != HumanBodyBones.Hips))
                     {
                         Vector3 pos = new Vector3((float)message.values[1], (float)message.values[2], (float)message.values[3]);
                         Quaternion rot = new Quaternion((float)message.values[4], (float)message.values[5], (float)message.values[6], (float)message.values[7]);
