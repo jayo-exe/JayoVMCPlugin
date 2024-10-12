@@ -18,7 +18,7 @@ namespace JayoVMCPlugin
         public MainThreadDispatcher mainThread;
 
         private VNyanHelper _VNyanHelper;
-        private VNyanTriggerDispatcher triggerDispatcher;
+        private VNyanPluginUpdater updater;
         private VmcSenderManager vmcManager;
 
         private GameObject connectButton;
@@ -28,64 +28,18 @@ namespace JayoVMCPlugin
         private InputField PortInput;
         private InputField AddressInput;
 
-        private string currentVersion = "v0.3.0";
-        private string latestVersion = "";
-        private bool updateAvailable = false;
+        private string currentVersion = "v0.4.0";
         private string repoName = "jayo-exe/JayoVMCPlugin";
-        private GameObject versionText;
-        private GameObject updateText;
-        private GameObject updateButton;
-
-        private void CheckForUpdates()
-        {
-            try
-            {
-                HttpWebRequest Request = (HttpWebRequest)WebRequest.Create($"https://api.github.com/repos/{repoName}/releases");
-                Request.UserAgent = "request";
-                HttpWebResponse response = (HttpWebResponse)Request.GetResponse();
-                StreamReader Reader = new StreamReader(response.GetResponseStream());
-                string JsonResponse = Reader.ReadToEnd();
-                JArray Releases = JArray.Parse(JsonResponse);
-                latestVersion = Releases[0]["tag_name"].ToString();
-                updateAvailable = currentVersion != latestVersion;
-            }
-            catch (Exception e)
-            {
-                Debug.Log($"Couldn't check for updates: {e.Message}");
-            }
-        }
-
-        private void OpenUpdatePage()
-        {
-            mainThread.Enqueue(() => {
-                Application.OpenURL($"https://github.com/{repoName}/releases/latest");
-            });
-        }
-
-        private void PrepareUpdateUI()
-        {
-
-            versionText = window.transform.Find("Panel/VersionText").gameObject;
-            versionText.GetComponent<Text>().text = currentVersion;
-
-            updateText = window.transform.Find("Panel/UpdateText").gameObject;
-            updateText.GetComponent<Text>().text = $"New Update Available: {latestVersion}";
-
-            updateButton = window.transform.Find("Panel/UpdateButton").gameObject;
-            updateButton.GetComponent<Button>().onClick.AddListener(() => { OpenUpdatePage(); });
-
-            if (!updateAvailable)
-            {
-                updateText.SetActive(false);
-                updateButton.SetActive(false);
-            }
-        }
+        private string updateLink = "https://jayo-exe.itch.io/vmc-plugin-for-vnyan";
 
         public void Awake()
         {
 
             Debug.Log($"VMC is Awake!");
             _VNyanHelper = new VNyanHelper();
+
+            updater = new VNyanPluginUpdater(repoName, currentVersion, updateLink);
+            updater.OpenUrlRequested += (url) => mainThread.Enqueue(() => { Application.OpenURL(url); });
 
             vmcManager = gameObject.AddComponent<VmcSenderManager>();
             vmcManager.VmcConnected += OnVmcConnected;
@@ -94,12 +48,11 @@ namespace JayoVMCPlugin
             Debug.Log($"Loading Settings");
             // Load settings
             loadPluginSettings();
-            CheckForUpdates();
+            updater.CheckForUpdates();
 
             Debug.Log($"Beginning Plugin Setup");
 
             mainThread = gameObject.AddComponent<MainThreadDispatcher>();
-            triggerDispatcher = gameObject.AddComponent<VNyanTriggerDispatcher>();
 
             try
             {
@@ -135,7 +88,11 @@ namespace JayoVMCPlugin
                 {
                     Debug.Log($"Preparing Plugin Window");
 
-                    PrepareUpdateUI();
+                    updater.PrepareUpdateUI(
+                        window.transform.Find("Panel/VersionText").gameObject,
+                        window.transform.Find("Panel/UpdateText").gameObject,
+                        window.transform.Find("Panel/UpdateButton").gameObject
+                    );
 
                     window.transform.Find("Panel/TitleBar/CloseButton").GetComponent<Button>().onClick.AddListener(() => { closePluginWindow(); });
 
