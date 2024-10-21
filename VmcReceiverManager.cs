@@ -22,6 +22,14 @@ namespace JayoVMCPlugin
         private Dictionary<BlendShapeKey, float> blends = new Dictionary<BlendShapeKey, float>();
         private Dictionary<string, BlendShapeKey> ValidBlendshapes = new Dictionary<string, BlendShapeKey>();
 
+        private Dictionary<string, Vector3> prevBonePositions = new Dictionary<string, Vector3>();
+        private Dictionary<string, Quaternion> prevBoneRotations = new Dictionary<string, Quaternion>();
+        private Dictionary<string, Vector3> newBonePositions = new Dictionary<string, Vector3>();
+        private Dictionary<string, Quaternion> newBoneRotations = new Dictionary<string, Quaternion>();
+        private int updateFrameInterval = 1;
+        private int currentFrameInterval = 0;
+
+
         private uOSC.uOscServer osc;
 
 
@@ -54,6 +62,47 @@ namespace JayoVMCPlugin
                         }
                     }
 
+                }
+
+                if (currentFrameInterval < updateFrameInterval) currentFrameInterval++;
+                //Debug.Log($"FrameIndex: {currentFrameInterval} / {updateFrameInterval}");
+                float lerpFactor = (float)currentFrameInterval / (float)updateFrameInterval;
+                Vector3 pos = Vector3.Lerp(prevBonePositions["root"], newBonePositions["root"], lerpFactor);
+                Quaternion rot = Quaternion.Lerp(prevBoneRotations["root"], newBoneRotations["root"], lerpFactor);
+                if (AnchorToStage)
+                {
+                    RootNode.transform.localPosition = pos;
+                    RootNode.transform.localRotation = rot;
+                }
+                else
+                {
+                    RootNode.transform.position = pos;
+                    RootNode.transform.rotation = rot;
+                }
+
+                foreach (HumanBodyBones bone in System.Enum.GetValues(typeof(HumanBodyBones)))
+                {
+                    if (bone == HumanBodyBones.LastBone) continue;
+                    if (bone == HumanBodyBones.Hips) continue;
+
+                    string boneName = bone.ToString();
+                    if (!prevBoneRotations.ContainsKey(boneName)) continue;
+                    if (!newBoneRotations.ContainsKey(boneName)) continue;
+                    //Debug.Log($"LERP POS {boneName}; {prevBonePositions[boneName].ToString("F6")}; {newBonePositions[boneName].ToString("F6")}; {Vector3.Distance(prevBonePositions[boneName], newBonePositions[boneName])}; {lerpFactor}");
+                    //Debug.Log($"LERP ROT {boneName}; {prevBoneRotations[boneName].ToString("F6")}; {newBoneRotations[boneName].ToString("F6")}; {lerpFactor}");
+                    pos = Vector3.Lerp(prevBonePositions[boneName], newBonePositions[boneName], lerpFactor);
+                    rot = Quaternion.Lerp(prevBoneRotations[boneName], newBoneRotations[boneName], lerpFactor);
+
+                    Transform boneTransform = animator.GetBoneTransform(bone);
+                    if (boneTransform != null)
+                    {
+                        if (!BoneRotationsOnly)
+                        {
+                            boneTransform.localPosition = pos;
+                        }
+
+                        boneTransform.localRotation = rot;
+                    }
                 }
             }
             catch (Exception e)
@@ -100,16 +149,11 @@ namespace JayoVMCPlugin
             {
                 Vector3 pos = new Vector3((float)message.values[1], (float)message.values[2], (float)message.values[3]);
                 Quaternion rot = new Quaternion((float)message.values[4], (float)message.values[5], (float)message.values[6], (float)message.values[7]);
-                if (AnchorToStage)
-                {
-                    RootNode.transform.localPosition = pos;
-                    RootNode.transform.localRotation = rot;
-                }
-                else
-                {
-                    RootNode.transform.position = pos;
-                    RootNode.transform.rotation = rot;
-                }
+
+                if (newBonePositions.ContainsKey("root")) prevBonePositions["root"] = new Vector3(newBonePositions["root"].x, newBonePositions["root"].y, newBonePositions["root"].z);
+                if (newBoneRotations.ContainsKey("root")) prevBoneRotations["root"] = new Quaternion(newBoneRotations["root"].x, newBoneRotations["root"].y, newBoneRotations["root"].z, newBoneRotations["root"].w);
+                newBonePositions["root"] = pos;
+                newBoneRotations["root"] = rot;
 
             }
 
@@ -124,16 +168,14 @@ namespace JayoVMCPlugin
                     {
                         Vector3 pos = new Vector3((float)message.values[1], (float)message.values[2], (float)message.values[3]);
                         Quaternion rot = new Quaternion((float)message.values[4], (float)message.values[5], (float)message.values[6], (float)message.values[7]);
-
+                        string boneName = bone.ToString();
                         var t = animator.GetBoneTransform(bone);
                         if (t != null)
                         {
-                            if (!BoneRotationsOnly)
-                            {
-                                t.localPosition = pos;
-                            }
-
-                            t.localRotation = rot;
+                            if (newBonePositions.ContainsKey(boneName)) prevBonePositions[boneName] = new Vector3(newBonePositions[boneName].x, newBonePositions[boneName].y, newBonePositions[boneName].z);
+                            if (newBoneRotations.ContainsKey(boneName)) prevBoneRotations[boneName] = new Quaternion(newBoneRotations[boneName].x, newBoneRotations[boneName].y, newBoneRotations[boneName].z, newBoneRotations[boneName].w);
+                            newBonePositions[boneName] = pos;
+                            newBoneRotations[boneName] = rot;
                         }
                     }
                 }
@@ -191,6 +233,11 @@ namespace JayoVMCPlugin
                         }
                     }
                 }
+            }
+            else if (message.address == "/NyaVMC/F")
+            {
+                updateFrameInterval = (int)message.values[0];
+                currentFrameInterval = 0;
             }
         }
     }

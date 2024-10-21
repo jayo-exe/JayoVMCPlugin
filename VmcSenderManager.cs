@@ -43,7 +43,7 @@ namespace JayoVMCPlugin
             senderAddress = "localhost";
             noBundle = false;
             autoStart = false;
-            updateFrameInterval = 1;
+            updateFrameInterval = 4;
             currentFrameInterval = 0;
             boneScales = new Dictionary<string, Vector3>();
 
@@ -199,6 +199,7 @@ namespace JayoVMCPlugin
 
             sendVMC("/VMC/Ext/OK", 1);
             sendVMC("/VMC/Ext/T", Time.time);
+            sendVMC("/NyaVMC/F", updateFrameInterval);
         }
 
         public void initVmc()
