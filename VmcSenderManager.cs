@@ -15,6 +15,8 @@ namespace JayoVMCPlugin
         public bool autoStart;
         public GameObject avatar;
         public Dictionary<string, float> blendshapes;
+        public int updateFrameInterval;
+        public int currentFrameInterval;
 
         public event Action VmcConnected;
         public event Action VmcDisconnected;
@@ -23,6 +25,7 @@ namespace JayoVMCPlugin
         private uOscClient osc;
         private GameObject lastAvatar;
         private Animator animator;
+        private Dictionary<string, Vector3> boneScales;
 
         public bool senderReady
         {
@@ -39,6 +42,9 @@ namespace JayoVMCPlugin
             senderAddress = "localhost";
             noBundle = false;
             autoStart = false;
+            updateFrameInterval = 1;
+            currentFrameInterval = 0;
+            boneScales = new Dictionary<string, Vector3>();
 
             gameObject.SetActive(false);
             osc = gameObject.AddComponent<uOscClient>();
@@ -66,6 +72,10 @@ namespace JayoVMCPlugin
 
         public void Update()
         {
+            currentFrameInterval++;
+            if (currentFrameInterval < updateFrameInterval) return; //only actually run on frames needed to meet send rate
+
+            currentFrameInterval = 0;
 
             if (avatar != null && avatar != lastAvatar)
             {
@@ -112,6 +122,28 @@ namespace JayoVMCPlugin
                 Transform boneTransform = animator.GetBoneTransform(bone);
                 if (boneTransform != null)
                 {
+                    if(boneScales.ContainsKey(bone.ToString()) && Vector3.Distance(boneScales[bone.ToString()], boneTransform.localScale) > 0)
+                    {
+                        var scaleMessage = new Message("/VMC/Ext/Bone/Scale",
+                            bone.ToString(),
+
+                            boneTransform.localScale.x,
+                            boneTransform.localScale.y,
+                            boneTransform.localScale.z
+                        );
+
+                        if (noBundle)
+                        {
+                            sendVMC(scaleMessage);
+                        }
+                        else
+                        {
+                            boneBundle.Add(scaleMessage);
+                        }
+                    }
+                    boneScales[bone.ToString()] = boneTransform.localScale;
+
+
                     var boneMessage = new Message("/VMC/Ext/Bone/Pos",
                         bone.ToString(),
 

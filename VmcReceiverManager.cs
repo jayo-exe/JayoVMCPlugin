@@ -125,6 +125,23 @@ namespace JayoVMCPlugin
                     }
                 }
             }
+            else if (message.address == "/VMC/Ext/Bone/Scale")
+            {
+                HumanBodyBones bone;
+                if (Enum.TryParse<HumanBodyBones>((string)message.values[0], out bone))
+                {
+                    if ((animator != null) && (bone != HumanBodyBones.LastBone) && (bone != HumanBodyBones.Hips))
+                    {
+                        Vector3 newScale = new Vector3((float)message.values[1], (float)message.values[2], (float)message.values[3]);
+
+                        var t = animator.GetBoneTransform(bone);
+                        if (t != null)
+                        {
+                            t.localScale = newScale;
+                        }
+                    }
+                }
+            }
             else if (message.address == "/VMC/Ext/Blend/Val")
             {
                 string BlendName = ((string)message.values[0]).ToLower();
