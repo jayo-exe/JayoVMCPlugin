@@ -10,7 +10,7 @@ using System.Net;
 
 namespace JayoVMCPlugin
 {
-    public class JayoVmcPlugin : MonoBehaviour, VNyanInterface.IButtonClickedHandler
+    public class JayoVmcPlugin : MonoBehaviour, VNyanInterface.IButtonClickedHandler, VNyanInterface.ITriggerHandler
     {
         public GameObject windowPrefab;
         public GameObject window;
@@ -54,6 +54,8 @@ namespace JayoVMCPlugin
 
             mainThread = gameObject.AddComponent<MainThreadDispatcher>();
 
+            _VNyanHelper.registerTriggerListener(this);
+
             try
             {
                 window = _VNyanHelper.pluginSetup(this, "Jayo's VMC Plugin", windowPrefab);
@@ -80,7 +82,7 @@ namespace JayoVMCPlugin
                 AddressInput?.onValueChanged.AddListener((v) => { vmcManager.senderAddress = v; });
                 AddressInput?.SetTextWithoutNotify(vmcManager.senderAddress);
 
-                
+
 
                 setStatusTitle("Idle");
 
@@ -117,7 +119,7 @@ namespace JayoVMCPlugin
 
                 try
                 {
-                    if(vmcManager.autoStart == true)
+                    if (vmcManager.autoStart == true)
                     {
                         initVmc();
                     }
@@ -156,12 +158,13 @@ namespace JayoVMCPlugin
 
         public void initVmc()
         {
-            if  (vmcManager.senderPort <= 0)
+            if (vmcManager.senderPort <= 0)
             {
                 setStatusTitle("VMC Receiver Port required");
                 return;
             }
-            mainThread.Enqueue(() => {
+            mainThread.Enqueue(() =>
+            {
                 setStatusTitle("Starting VMC");
                 vmcManager.initVmc();
                 connectButton.SetActive(false);
@@ -173,7 +176,8 @@ namespace JayoVMCPlugin
 
         public void deInitVmc()
         {
-            mainThread.Enqueue(() => {
+            mainThread.Enqueue(() =>
+            {
                 setStatusTitle("Stopping VMC");
                 vmcManager.deInitVmc();
                 connectButton.SetActive(true);
@@ -197,7 +201,7 @@ namespace JayoVMCPlugin
             {
                 string portValue;
                 settings.TryGetValue("VMCSenderPort", out portValue);
-                if(portValue != null) vmcManager.senderPort = Int32.Parse(portValue);
+                if (portValue != null) vmcManager.senderPort = Int32.Parse(portValue);
 
                 string addressValue;
                 settings.TryGetValue("VMCSenderAddress", out addressValue);
@@ -246,9 +250,36 @@ namespace JayoVMCPlugin
             {
                 Text StatusTitle = window.transform.Find("Panel/StatusControls/Status Indicator").GetComponent<Text>();
                 StatusTitle.text = titleText;
-            } catch(Exception e)
+            }
+            catch (Exception e)
             {
                 Debug.Log("title window doesnt exist yet");
+            }
+        }
+
+        public void triggerCalled(string triggerName, int value1, int value2, int value3, string text1, string text2, string text3)
+        {
+            if (!triggerName.StartsWith("_xjv_") && !triggerName.StartsWith("_xjvt:")) return;
+
+            //Debug.Log($"Trigger Details. name: {triggerName} | v1: {value1}, v2: {value2}, v3: {value3} | t1: {text1}, t2: {text2}, t3: {text3}");
+            if(triggerName.StartsWith("_xjvt:"))
+            {
+                string newTriggerName = triggerName.Substring(6);
+                //Debug.Log($"Transmitting Trigger Details. name: {newTriggerName} | v1: {value1}, v2: {value2}, v3: {value3} | t1: {text1}, t2: {text2}, t3: {text3}");
+                vmcManager.SendTriggerOverVMC(newTriggerName, value1, value2, value3, text1, text2, text3);
+                return;
+            }
+            
+            switch (triggerName)
+            {
+                case "_xjv_init":
+                    initVmc();
+                    break;
+                case "_xjv_deinit":
+                    deInitVmc();
+                    break;
+                default:
+                    break;
             }
         }
     }

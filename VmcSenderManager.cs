@@ -16,7 +16,7 @@ namespace JayoVMCPlugin
         public GameObject avatar;
         public Dictionary<string, float> blendshapes;
         public int updateFrameInterval;
-        public int currentFrameInterval;
+        
 
         public event Action VmcConnected;
         public event Action VmcDisconnected;
@@ -26,6 +26,7 @@ namespace JayoVMCPlugin
         private GameObject lastAvatar;
         private Animator animator;
         private Dictionary<string, Vector3> boneScales;
+        private int currentFrameInterval;
 
         public bool senderReady
         {
@@ -124,7 +125,7 @@ namespace JayoVMCPlugin
                 {
                     if(boneScales.ContainsKey(bone.ToString()) && Vector3.Distance(boneScales[bone.ToString()], boneTransform.localScale) > 0)
                     {
-                        var scaleMessage = new Message("/VMC/Ext/Bone/Scale",
+                        var scaleMessage = new Message("/NyaVMC/Ext/Bone/Scale",
                             bone.ToString(),
 
                             boneTransform.localScale.x,
@@ -293,6 +294,11 @@ namespace JayoVMCPlugin
             if (osc == null) return;
 
             osc.Send(bundle);
+        }
+
+        public void SendTriggerOverVMC(string triggerName, int value1, int value2, int value3, string text1, string text2, string text3)
+        {
+            sendVMC("/NyaVMC/Trigger", triggerName, value1, value2, value3, text1, text2, text3);
         }
 
     }
