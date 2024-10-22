@@ -16,7 +16,10 @@ namespace JayoVMCPlugin
         public GameObject avatar;
         public Dictionary<string, float> blendshapes;
         public int updateFrameInterval;
-        
+        public bool sendBoneScale;
+        public bool sendTriggers;
+        public bool sendRateInfo;
+
 
         public event Action VmcConnected;
         public event Action VmcDisconnected;
@@ -43,7 +46,10 @@ namespace JayoVMCPlugin
             senderAddress = "localhost";
             noBundle = false;
             autoStart = false;
-            updateFrameInterval = 4;
+            updateFrameInterval = 1;
+            sendBoneScale = false;
+            sendTriggers = false;
+            sendRateInfo = false;
             currentFrameInterval = 0;
             boneScales = new Dictionary<string, Vector3>();
 
@@ -123,27 +129,29 @@ namespace JayoVMCPlugin
                 Transform boneTransform = animator.GetBoneTransform(bone);
                 if (boneTransform != null)
                 {
-                    if(boneScales.ContainsKey(bone.ToString()) && Vector3.Distance(boneScales[bone.ToString()], boneTransform.localScale) > 0)
+                    if(sendBoneScale)
                     {
-                        var scaleMessage = new Message("/NyaVMC/Ext/Bone/Scale",
-                            bone.ToString(),
-
-                            boneTransform.localScale.x,
-                            boneTransform.localScale.y,
-                            boneTransform.localScale.z
-                        );
-
-                        if (noBundle)
+                        if (boneScales.ContainsKey(bone.ToString()) && Vector3.Distance(boneScales[bone.ToString()], boneTransform.localScale) > 0)
                         {
-                            sendVMC(scaleMessage);
+                            var scaleMessage = new Message("/NyaVMC/Ext/Bone/Scale",
+                                bone.ToString(),
+
+                                boneTransform.localScale.x,
+                                boneTransform.localScale.y,
+                                boneTransform.localScale.z
+                            );
+
+                            if (noBundle)
+                            {
+                                sendVMC(scaleMessage);
+                            }
+                            else
+                            {
+                                boneBundle.Add(scaleMessage);
+                            }
                         }
-                        else
-                        {
-                            boneBundle.Add(scaleMessage);
-                        }
+                        boneScales[bone.ToString()] = boneTransform.localScale;
                     }
-                    boneScales[bone.ToString()] = boneTransform.localScale;
-
 
                     var boneMessage = new Message("/VMC/Ext/Bone/Pos",
                         bone.ToString(),
@@ -199,7 +207,11 @@ namespace JayoVMCPlugin
 
             sendVMC("/VMC/Ext/OK", 1);
             sendVMC("/VMC/Ext/T", Time.time);
-            sendVMC("/NyaVMC/F", updateFrameInterval);
+            if(sendRateInfo)
+            {
+                sendVMC("/NyaVMC/F", updateFrameInterval);
+            }
+            
         }
 
         public void initVmc()
@@ -299,6 +311,7 @@ namespace JayoVMCPlugin
 
         public void SendTriggerOverVMC(string triggerName, int value1, int value2, int value3, string text1, string text2, string text3)
         {
+            if (!sendTriggers) return;
             sendVMC("/NyaVMC/Trigger", triggerName, value1, value2, value3, text1, text2, text3);
         }
 

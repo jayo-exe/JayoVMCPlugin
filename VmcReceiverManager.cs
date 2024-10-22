@@ -20,11 +20,16 @@ namespace JayoVMCPlugin
         private Animator animator = null;
         private VRMBlendShapeProxy blendShapeProxy = null;
         private Dictionary<BlendShapeKey, float> blends = new Dictionary<BlendShapeKey, float>();
+        private Dictionary<BlendShapeKey, float> newBlends = new Dictionary<BlendShapeKey, float>();
+        private Dictionary<BlendShapeKey, float> prevBlends = new Dictionary<BlendShapeKey, float>();
+        private Dictionary<BlendShapeKey, float> currentBlends = new Dictionary<BlendShapeKey, float>();
         private Dictionary<string, BlendShapeKey> ValidBlendshapes = new Dictionary<string, BlendShapeKey>();
 
         private Dictionary<string, Vector3> prevBonePositions = new Dictionary<string, Vector3>();
+        private Dictionary<string, Vector3> prevBoneScales = new Dictionary<string, Vector3>();
         private Dictionary<string, Quaternion> prevBoneRotations = new Dictionary<string, Quaternion>();
         private Dictionary<string, Vector3> newBonePositions = new Dictionary<string, Vector3>();
+        private Dictionary<string, Vector3> newBoneScales = new Dictionary<string, Vector3>();
         private Dictionary<string, Quaternion> newBoneRotations = new Dictionary<string, Quaternion>();
         private int updateFrameInterval = 1;
         private int currentFrameInterval = 0;
@@ -66,7 +71,9 @@ namespace JayoVMCPlugin
 
                 if (currentFrameInterval < updateFrameInterval) currentFrameInterval++;
                 //Debug.Log($"FrameIndex: {currentFrameInterval} / {updateFrameInterval}");
+
                 float lerpFactor = (float)currentFrameInterval / (float)updateFrameInterval;
+
                 Vector3 pos = Vector3.Lerp(prevBonePositions["root"], newBonePositions["root"], lerpFactor);
                 Quaternion rot = Quaternion.Lerp(prevBoneRotations["root"], newBoneRotations["root"], lerpFactor);
                 if (AnchorToStage)
@@ -102,8 +109,31 @@ namespace JayoVMCPlugin
                         }
 
                         boneTransform.localRotation = rot;
+
+                        if (!prevBoneScales.ContainsKey(boneName)) continue;
+                        if (!newBoneScales.ContainsKey(boneName)) continue;
+
+                        Vector3 scale = Vector3.Lerp(prevBoneScales[boneName], newBoneScales[boneName], lerpFactor);
+                        boneTransform.localScale = scale;
+                        if(lerpFactor == 1.00)
+                        {
+                            prevBoneScales.Remove(boneName);
+                            newBoneScales.Remove(boneName);
+                        }
                     }
                 }
+
+                if (blendShapeProxy != null)
+                {
+                    foreach(KeyValuePair<BlendShapeKey, float> newBlendShape in newBlends)
+                    {
+                        currentBlends[newBlendShape.Key] = Mathf.Lerp(prevBlends[newBlendShape.Key], newBlends[newBlendShape.Key], lerpFactor); 
+                    }
+                    blendShapeProxy.SetValues(currentBlends);
+                }
+                currentBlends.Clear();
+
+
             }
             catch (Exception e)
             {
@@ -194,7 +224,8 @@ namespace JayoVMCPlugin
             {
                 if (blendShapeProxy != null)
                 {
-                    blendShapeProxy.SetValues(blends);
+                    prevBlends = new Dictionary<BlendShapeKey, float>(newBlends);
+                    newBlends = new Dictionary<BlendShapeKey, float>(blends);
                 }
                 blends.Clear();
 
@@ -224,12 +255,15 @@ namespace JayoVMCPlugin
                 {
                     if ((animator != null) && (bone != HumanBodyBones.LastBone) && (bone != HumanBodyBones.Hips))
                     {
+                        
                         Vector3 newScale = new Vector3((float)message.values[1], (float)message.values[2], (float)message.values[3]);
 
                         var t = animator.GetBoneTransform(bone);
                         if (t != null)
                         {
-                            t.localScale = newScale;
+                            string boneName = bone.ToString();
+                            prevBoneScales[boneName] = t.localScale;
+                            newBoneScales[boneName] = newScale;
                         }
                     }
                 }
@@ -238,6 +272,7 @@ namespace JayoVMCPlugin
             {
                 updateFrameInterval = (int)message.values[0];
                 currentFrameInterval = 0;
+
             }
         }
     }

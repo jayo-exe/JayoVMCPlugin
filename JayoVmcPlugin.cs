@@ -25,6 +25,10 @@ namespace JayoVMCPlugin
         private GameObject disconnectButton;
         private GameObject autoStartToggle;
         private GameObject noBundleToggle;
+        private GameObject sendRateDropdown;
+        private GameObject sendBoneScaleToggle;
+        private GameObject sendTriggersToggle;
+        private GameObject sendRateInfoToggle;
         private InputField PortInput;
         private InputField AddressInput;
 
@@ -111,6 +115,22 @@ namespace JayoVMCPlugin
                     noBundleToggle = window.transform.Find("Panel/VMCSenderInfo/NoBundleToggle").gameObject;
                     noBundleToggle.GetComponent<Toggle>().onValueChanged.AddListener((v) => { vmcManager.noBundle = v; });
                     noBundleToggle.GetComponent<Toggle>().SetIsOnWithoutNotify(vmcManager.noBundle);
+
+                    sendRateDropdown = window.transform.Find("Panel/VMCSenderInfo/SendRateDropdown").gameObject;
+                    sendRateDropdown.GetComponent<Dropdown>().onValueChanged.AddListener((v) => { vmcManager.updateFrameInterval = v + 1; });
+                    sendRateDropdown.GetComponent<Dropdown>().SetValueWithoutNotify(vmcManager.updateFrameInterval - 1);
+
+                    sendBoneScaleToggle = window.transform.Find("Panel/ExtendedFeatures/BoneScaleToggle").gameObject;
+                    sendBoneScaleToggle.GetComponent<Toggle>().onValueChanged.AddListener((v) => { vmcManager.sendBoneScale = v; });
+                    sendBoneScaleToggle.GetComponent<Toggle>().SetIsOnWithoutNotify(vmcManager.sendBoneScale);
+
+                    sendTriggersToggle = window.transform.Find("Panel/ExtendedFeatures/SendTriggerToggle").gameObject;
+                    sendTriggersToggle.GetComponent<Toggle>().onValueChanged.AddListener((v) => { vmcManager.sendTriggers = v; });
+                    sendTriggersToggle.GetComponent<Toggle>().SetIsOnWithoutNotify(vmcManager.sendTriggers);
+
+                    sendRateInfoToggle = window.transform.Find("Panel/ExtendedFeatures/SendTimingToggle").gameObject;
+                    sendRateInfoToggle.GetComponent<Toggle>().onValueChanged.AddListener((v) => { vmcManager.sendRateInfo = v; });
+                    sendRateInfoToggle.GetComponent<Toggle>().SetIsOnWithoutNotify(vmcManager.sendRateInfo);
                 }
                 catch (Exception e)
                 {
@@ -214,6 +234,22 @@ namespace JayoVMCPlugin
                 string bundleValue;
                 settings.TryGetValue("VMCNoBundle", out bundleValue);
                 if (bundleValue != null) vmcManager.noBundle = Boolean.Parse(bundleValue);
+
+                string sendRate;
+                settings.TryGetValue("VMCSendRate", out sendRate);
+                if (sendRate != null) vmcManager.updateFrameInterval = Int32.Parse(sendRate);
+
+                string sendBoneScale;
+                settings.TryGetValue("VMCSendBoneScale", out sendBoneScale);
+                if (sendBoneScale != null) vmcManager.sendBoneScale = Boolean.Parse(sendBoneScale);
+
+                string sendTriggers;
+                settings.TryGetValue("VMCSendTriggers", out sendTriggers);
+                if (sendTriggers != null) vmcManager.sendTriggers = Boolean.Parse(sendTriggers);
+
+                string sendRateInfo;
+                settings.TryGetValue("VMCSendRateInfo", out sendRateInfo);
+                if (sendRateInfo != null) vmcManager.sendRateInfo = Boolean.Parse(sendRateInfo);
             }
         }
 
@@ -224,6 +260,11 @@ namespace JayoVMCPlugin
             settings["VMCSenderAddress"] = vmcManager.senderAddress.ToString();
             settings["VMCAutoStart"] = vmcManager.autoStart.ToString();
             settings["VMCNoBundle"] = vmcManager.noBundle.ToString();
+            settings["VMCSendRate"] = vmcManager.updateFrameInterval.ToString();
+            settings["VMCSendBoneScale"] = vmcManager.sendBoneScale.ToString();
+            settings["VMCSendTriggers"] = vmcManager.sendTriggers.ToString();
+            settings["VMCSendRateInfo"] = vmcManager.sendRateInfo.ToString();
+
 
             _VNyanHelper.savePluginSettingsData("JayoVMCPlugin.cfg", settings);
         }
