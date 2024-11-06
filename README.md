@@ -29,6 +29,8 @@ In order for the plugin to send motion data over VMC, you'll need to provide the
 
 If you're having trouble with a VMC receiver not getting your movement data, this may be because the reciever doesn't support bundling VMC message. Try checking off "Don't Bundle Packets" to see if ther is any improvement.
 
+![VMC Plugin UI](https://github.com/user-attachments/assets/a513935c-8623-4498-8623-9b5dec13dcf7)
+
 ### VMC Receiver Behaviour
 The JayoVMCPlugin.dll file also contains a "VMC Receiver Manager" behaviour that can be used to accept incoming VMC messages and apply them to a model.  This can be used in your model project in Unity to "preview" your model's movement' before exporting, or to create VNyan objects that contain VMC-Controllable Characters.  Using the Behaviour is pretty simple:
 1. Create a new GameObject
@@ -42,6 +44,8 @@ The JayoVMCPlugin.dll file also contains a "VMC Receiver Manager" behaviour that
 This plugin's library also extends the functionality of the VMC protocol, allowing a greater range of model state information to be sent by the Sender plugin, and handled by the Receiver Behaviour.  
 
 These features are denoted with message addresses starting with `/NyaVMC` rather then `/VMC`, so while these messages won't work with other VMC receivers, any receivers that are properly VMC-compliant will just ignore them.
+
+![Extended Features seen on the UI](https://github.com/user-attachments/assets/80505158-900d-4ab2-98fa-09b865593bed)
 
 #### Variable Tracking Rate
 To reduce network load, NyaVMC provides a message in the format of `/NyaVMC/F <interval>` to communicate how many frames pass between tracking updates.
@@ -68,13 +72,15 @@ Objects using the `VMCReceiverManager` behaviour will interpret these messages a
 
 For example, if the Sender fires a trigger called `_xjvt:some_trigger`, the Receiver would call a trigger called `some_trigger` with the provided values
 
+![Diagram illustrating sender/receiver nodes](https://github.com/user-attachments/assets/edc3f7cd-b520-4c81-8e6c-09b85553a605)
+
 #### Send Animation Parameters
 Since VMC is platform-agnostic and Unity's Animator system is proprietary, VMC does not provide a way to communicate when an animation parameter on a model has changed.  To address this, NyaVMC provides messages for each Parameter type:
 
 - `/NyaVMC/Ext/Anim/IntParam <objectPath> <parameterHash> <value>`
 - `/NyaVMC/Ext/Anim/FloatParam <objectPath> <parameterHash> <value>`
 - `/NyaVMC/Ext/Anim/BoolParam <objectPath> <parameterHash> <value>`
-- `/NyaVMC/Ext/Anim/TriggerParam <objectPath> <parameterHash> <value>`
+- `/NyaVMC/Ext/Anim/TriggerParam <objectPath> <parameterHash>`
 
 The VMC Sender will send these packets whenever an animation Parameter on any animator on your avatar changes, as long as the "Send Animation Parameters" setting is enabled. 
 
