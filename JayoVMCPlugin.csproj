@@ -9,6 +9,9 @@
 	</Target>
 
 	<ItemGroup>
+	  <Reference Include="Assembly-CSharp">
+	    <HintPath>E:\VNyan1.4.5\VNyan_Data\Managed\Assembly-CSharp.dll</HintPath>
+	  </Reference>
 	  <Reference Include="Newtonsoft.Json">
 	    <HintPath>E:\vNyan\VNyan_Data\Managed\Newtonsoft.Json.dll</HintPath>
 	  </Reference>

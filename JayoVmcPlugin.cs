@@ -29,6 +29,7 @@ namespace JayoVMCPlugin
         private GameObject sendBoneScaleToggle;
         private GameObject sendTriggersToggle;
         private GameObject sendRateInfoToggle;
+        private GameObject sendAnimParamsToggle;
         private InputField PortInput;
         private InputField AddressInput;
 
@@ -127,6 +128,10 @@ namespace JayoVMCPlugin
                     sendTriggersToggle = window.transform.Find("Panel/ExtendedFeatures/SendTriggerToggle").gameObject;
                     sendTriggersToggle.GetComponent<Toggle>().onValueChanged.AddListener((v) => { vmcManager.sendTriggers = v; });
                     sendTriggersToggle.GetComponent<Toggle>().SetIsOnWithoutNotify(vmcManager.sendTriggers);
+
+                    sendAnimParamsToggle = window.transform.Find("Panel/ExtendedFeatures/SendAnimParamToggle").gameObject;
+                    sendAnimParamsToggle.GetComponent<Toggle>().onValueChanged.AddListener((v) => { vmcManager.sendAnimParams = v; });
+                    sendAnimParamsToggle.GetComponent<Toggle>().SetIsOnWithoutNotify(vmcManager.sendAnimParams);
 
                     sendRateInfoToggle = window.transform.Find("Panel/ExtendedFeatures/SendTimingToggle").gameObject;
                     sendRateInfoToggle.GetComponent<Toggle>().onValueChanged.AddListener((v) => { vmcManager.sendRateInfo = v; });
@@ -247,6 +252,10 @@ namespace JayoVMCPlugin
                 settings.TryGetValue("VMCSendTriggers", out sendTriggers);
                 if (sendTriggers != null) vmcManager.sendTriggers = Boolean.Parse(sendTriggers);
 
+                string sendAnimParams;
+                settings.TryGetValue("VMCSendAnimParams", out sendAnimParams);
+                if (sendTriggers != null) vmcManager.sendAnimParams = Boolean.Parse(sendAnimParams);
+
                 string sendRateInfo;
                 settings.TryGetValue("VMCSendRateInfo", out sendRateInfo);
                 if (sendRateInfo != null) vmcManager.sendRateInfo = Boolean.Parse(sendRateInfo);
@@ -263,6 +272,7 @@ namespace JayoVMCPlugin
             settings["VMCSendRate"] = vmcManager.updateFrameInterval.ToString();
             settings["VMCSendBoneScale"] = vmcManager.sendBoneScale.ToString();
             settings["VMCSendTriggers"] = vmcManager.sendTriggers.ToString();
+            settings["VMCSendAnimParams"] = vmcManager.sendAnimParams.ToString();
             settings["VMCSendRateInfo"] = vmcManager.sendRateInfo.ToString();
 
 

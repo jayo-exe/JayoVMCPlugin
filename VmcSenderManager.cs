@@ -17,9 +17,15 @@ namespace JayoVMCPlugin
         public Dictionary<string, float> blendshapes;
         public int updateFrameInterval;
         public bool sendBoneScale;
+        public bool sendAnimParams;
         public bool sendTriggers;
         public bool sendRateInfo;
 
+        private Dictionary<string, Animator> childAnimators = new Dictionary<string, Animator>();
+        private Dictionary<string, Dictionary<int, int>> animatorIntParameters = new Dictionary<string, Dictionary<int, int>>();
+        private Dictionary<string, Dictionary<int, float>> animatorFloatParameters = new Dictionary<string, Dictionary<int, float>>();
+        private Dictionary<string, Dictionary<int, bool>> animatorBooleanParameters = new Dictionary<string, Dictionary<int, bool>>();
+        private Dictionary<string, Dictionary<int, bool>> animatorTriggerParameters = new Dictionary<string, Dictionary<int, bool>>();
 
         public event Action VmcConnected;
         public event Action VmcDisconnected;
@@ -49,6 +55,7 @@ namespace JayoVMCPlugin
             updateFrameInterval = 1;
             sendBoneScale = false;
             sendTriggers = false;
+            sendAnimParams = false;
             sendRateInfo = false;
             currentFrameInterval = 0;
             boneScales = new Dictionary<string, Vector3>();
@@ -92,6 +99,7 @@ namespace JayoVMCPlugin
                 {
                     Debug.Log($"animator not found for {avatar.name}");
                 }
+                refetchChildAnimators();
                 lastAvatar = avatar;
             }
 
@@ -101,6 +109,8 @@ namespace JayoVMCPlugin
                 sendVMC("/VMC/Ext/T", Time.time);
                 return;
             }
+
+            if (sendAnimParams) checkAllParameters();
 
             Bundle boneBundle = new Bundle(Timestamp.Now);
             Bundle blendshapeBundle = new Bundle(Timestamp.Now);
@@ -313,6 +323,134 @@ namespace JayoVMCPlugin
         {
             if (!sendTriggers) return;
             sendVMC("/NyaVMC/Trigger", triggerName, value1, value2, value3, text1, text2, text3);
+        }
+
+        private string getObjectPath(Transform child, Transform parent)
+        {
+            string path = child.name;
+            Transform currentParent = child.parent;
+
+            while (currentParent != parent && currentParent != null)
+            {
+                path = currentParent.name + "/" + path;
+                currentParent = currentParent.parent;
+            }
+
+            if (currentParent == parent)
+            {
+                return path;
+            }
+
+            return "";
+        }
+
+        private void refetchChildAnimators()
+        {
+            childAnimators = new Dictionary<string, Animator>();
+            animatorIntParameters = new Dictionary<string, Dictionary<int, int>>();
+            animatorFloatParameters = new Dictionary<string, Dictionary<int, float>>();
+            animatorBooleanParameters = new Dictionary<string, Dictionary<int, bool>>();
+            animatorTriggerParameters = new Dictionary<string, Dictionary<int, bool>>();
+
+            Animator[] animators = avatar.GetComponentsInChildren<Animator>(true);
+            for (int i = 0; i < animators.Length; i++)
+            {
+                string relativePath = getObjectPath(animators[i].transform, avatar.transform);
+                childAnimators[relativePath] = animators[i];
+                animatorIntParameters[relativePath] = new Dictionary<int, int>();
+                animatorFloatParameters[relativePath] = new Dictionary<int, float>();
+                animatorBooleanParameters[relativePath] = new Dictionary<int, bool>();
+                animatorTriggerParameters[relativePath] = new Dictionary<int, bool>();
+            }
+        }
+
+        private void checkAllParameters()
+        {
+            if (childAnimators.Count == 0) return;
+
+            foreach (KeyValuePair<string, Animator> item in childAnimators)
+            {
+                RetrieveAnimatorParameters(item.Key, item.Value);
+            }
+        }
+
+        private void RetrieveAnimatorParameters(string path, Animator target)
+        {
+            bool paramsChanged = false;
+            Bundle parameterBundle = new Bundle(Timestamp.Now);
+            AnimatorControllerParameter[] parameters = target.parameters;
+
+            // Iterate over all the parameters
+            foreach (AnimatorControllerParameter parameter in parameters)
+            {
+                switch (parameter.type)
+                {
+                    case AnimatorControllerParameterType.Int:
+                        int intValue = target.GetInteger(parameter.nameHash);
+                        if (!animatorIntParameters[path].ContainsKey(parameter.nameHash) || animatorIntParameters[path][parameter.nameHash] != intValue)
+                        {
+                            //send/batch change packet for this difference
+                            //NyaVMC/Ext/Anim/IntParam animatorPath paramhash value
+                            var paramMessage = new Message("/NyaVMC/Ext/Anim/IntParam", path, parameter.nameHash, intValue);
+                            if (noBundle) sendVMC(paramMessage);
+                            else parameterBundle.Add(paramMessage);
+                            paramsChanged = true;
+                            Debug.Log($"Int Parameter Changed: {path} {parameter.name} {intValue}");
+                        }
+                        animatorIntParameters[path][parameter.nameHash] = intValue;
+                        break;
+                    case AnimatorControllerParameterType.Float:
+                        float floatValue = target.GetFloat(parameter.nameHash);
+                        if (!animatorFloatParameters[path].ContainsKey(parameter.nameHash) || animatorFloatParameters[path][parameter.nameHash] != floatValue)
+                        {
+                            //send/batch change packet for this difference
+                            //NyaVMC/Ext/Anim/FloatParam animatorPath paramhash value
+                            var paramMessage = new Message("/NyaVMC/Ext/Anim/FloatParam", path, parameter.nameHash, floatValue);
+                            if (noBundle) sendVMC(paramMessage);
+                            else parameterBundle.Add(paramMessage);
+                            paramsChanged = true;
+                            Debug.Log($"Float Parameter Changed: {path} {parameter.name} ({parameter.nameHash}) {floatValue}");
+                        }
+                        animatorFloatParameters[path][parameter.nameHash] = floatValue;
+                        break;
+                    case AnimatorControllerParameterType.Bool:
+                        bool boolValue = target.GetBool(parameter.nameHash);
+                        if (!animatorBooleanParameters[path].ContainsKey(parameter.nameHash) || animatorBooleanParameters[path][parameter.nameHash] != boolValue)
+                        {
+                            //send/batch change packet for this difference
+                            //NyaVMC/Ext/Anim/BoolParam animatorPath paramhash value
+                            var paramMessage = new Message("/NyaVMC/Ext/Anim/BoolParam", path, parameter.nameHash, boolValue);
+                            if (noBundle) sendVMC(paramMessage);
+                            else parameterBundle.Add(paramMessage);
+                            paramsChanged = true;
+                            Debug.Log($"Bool Parameter Changed: {path} {parameter.name} {boolValue}");
+                        }
+                        animatorBooleanParameters[path][parameter.nameHash] = boolValue;
+                        break;
+                    case AnimatorControllerParameterType.Trigger:
+                        bool triggerValue = target.GetBool(parameter.nameHash);
+                        if (!animatorTriggerParameters[path].ContainsKey(parameter.nameHash) || (animatorTriggerParameters[path][parameter.nameHash] != triggerValue && triggerValue))
+                        {
+                            //send/batch change packet for this difference
+                            //NyaVMC/Ext/Anim/BoolParam animatorPath paramhash value
+                            var paramMessage = new Message("/NyaVMC/Ext/Anim/TriggerParam", path, parameter.nameHash);
+                            if (noBundle) sendVMC(paramMessage);
+                            else parameterBundle.Add(paramMessage);
+                            paramsChanged = true;
+                            Debug.Log($"Trigger Parameter Set: {path} {parameter.name}");
+                        }
+                        animatorTriggerParameters[path][parameter.nameHash] = triggerValue;
+                        break;
+                    default:
+                        Debug.LogWarning($"Unhandled parameter type: {parameter.type}");
+                        break;
+                }
+            }
+
+            if(paramsChanged && !noBundle)
+            {
+                sendVMC(parameterBundle);
+            }
         }
 
     }

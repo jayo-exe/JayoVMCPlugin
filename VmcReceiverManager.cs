@@ -18,6 +18,8 @@ namespace JayoVMCPlugin
         public bool BoneRotationsOnly;
 
         private Animator animator = null;
+        private Dictionary<string, Animator> childAnimators = new Dictionary<string, Animator>();
+
         private VRMBlendShapeProxy blendShapeProxy = null;
         private Dictionary<BlendShapeKey, float> blends = new Dictionary<BlendShapeKey, float>();
         private Dictionary<BlendShapeKey, float> newBlends = new Dictionary<BlendShapeKey, float>();
@@ -137,7 +139,7 @@ namespace JayoVMCPlugin
             }
             catch (Exception e)
             {
-                Debug.Log("O!");
+                Debug.Log($"Receiver Error: {e.Message}");
             }
 
 
@@ -160,6 +162,13 @@ namespace JayoVMCPlugin
                         ValidBlendshapes.Add(b.Key.Name.ToLower(), b.Key);
                     }
                 }
+
+                refetchChildAnimators();
+                
+                //disable anim param links on models attached to receivers
+                AnimParamLink[] paramLinks = Model.GetComponentsInChildren<AnimParamLink>(true);
+                foreach (AnimParamLink paramLink in paramLinks) paramLink.enabled = false;
+
                 OldModel = Model;
             }
 
@@ -268,11 +277,61 @@ namespace JayoVMCPlugin
                     }
                 }
             }
+            else if (message.address == "/NyaVMC/Ext/Anim/IntParam")
+            {
+                if (childAnimators.ContainsKey((string)message.values[0])) childAnimators[(string)message.values[0]].SetInteger((int)message.values[1], (int)message.values[2]);
+            }
+            else if (message.address == "/NyaVMC/Ext/Anim/FloatParam")
+            {
+                if (childAnimators.ContainsKey((string)message.values[0]))
+                {
+                    Debug.Log($"Float Parameter Received: (string)message.values[0] {(int)message.values[1]} {(float)message.values[2]}");
+                    childAnimators[(string)message.values[0]].SetFloat((int)message.values[1], (float)message.values[2]);
+                }
+            }
+            else if (message.address == "/NyaVMC/Ext/Anim/BoolParam")
+            {
+                if (childAnimators.ContainsKey((string)message.values[0])) childAnimators[(string)message.values[0]].SetBool((int)message.values[1], (bool)message.values[2]);
+            }
+            else if (message.address == "/NyaVMC/Ext/Anim/TriggerParam")
+            {
+                if (childAnimators.ContainsKey((string)message.values[0])) childAnimators[(string)message.values[0]].SetTrigger((int)message.values[1]);
+            }
             else if (message.address == "/NyaVMC/F")
             {
                 updateFrameInterval = (int)message.values[0];
                 currentFrameInterval = 0;
+            }
+        }
 
+        private string getObjectPath(Transform child, Transform parent)
+        {
+            string path = child.name;
+            Transform currentParent = child.parent;
+
+            while (currentParent != parent && currentParent != null)
+            {
+                path = currentParent.name + "/" + path;
+                currentParent = currentParent.parent;
+            }
+
+            if (currentParent == parent)
+            {
+                return path;
+            }
+
+            return "";
+        }
+
+        private void refetchChildAnimators()
+        {
+            childAnimators = new Dictionary<string, Animator>();
+
+            Animator[] animators = Model.GetComponentsInChildren<Animator>(true);
+            for(int i = 0; i < animators.Length; i++)
+            {
+                string relativePath = getObjectPath(animators[i].transform, Model.transform);
+                childAnimators[relativePath] = animators[i];
             }
         }
     }
