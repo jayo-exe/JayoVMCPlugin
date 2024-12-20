@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEditor;
 using System.Net;
 using uOSC;
+using System.Xml;
+using UnityEngine.XR;
 
 namespace JayoVMCPlugin
 {
@@ -20,12 +22,14 @@ namespace JayoVMCPlugin
         public bool sendAnimParams;
         public bool sendTriggers;
         public bool sendRateInfo;
+        public bool sendRawBones;
 
         private Dictionary<string, Animator> childAnimators = new Dictionary<string, Animator>();
         private Dictionary<string, Dictionary<int, int>> animatorIntParameters = new Dictionary<string, Dictionary<int, int>>();
         private Dictionary<string, Dictionary<int, float>> animatorFloatParameters = new Dictionary<string, Dictionary<int, float>>();
         private Dictionary<string, Dictionary<int, bool>> animatorBooleanParameters = new Dictionary<string, Dictionary<int, bool>>();
         private Dictionary<string, Dictionary<int, bool>> animatorTriggerParameters = new Dictionary<string, Dictionary<int, bool>>();
+        private Dictionary<string, Transform> rawBones = new Dictionary<string, Transform>();
 
         public event Action VmcConnected;
         public event Action VmcDisconnected;
@@ -57,6 +61,7 @@ namespace JayoVMCPlugin
             sendTriggers = false;
             sendAnimParams = false;
             sendRateInfo = false;
+            sendRawBones = false;
             currentFrameInterval = 0;
             boneScales = new Dictionary<string, Vector3>();
 
@@ -91,6 +96,8 @@ namespace JayoVMCPlugin
 
             currentFrameInterval = 0;
 
+            Transform rootNode;
+
             if (avatar != null && avatar != lastAvatar)
             {
                 Debug.Log($"avatar object is {avatar.name}");
@@ -100,7 +107,24 @@ namespace JayoVMCPlugin
                     Debug.Log($"animator not found for {avatar.name}");
                 }
                 refetchChildAnimators();
+                RetrieveRawBones();
                 lastAvatar = avatar;
+            }
+
+            if(animator != null)
+            {
+                rootNode = animator.GetBoneTransform(HumanBodyBones.Hips);
+
+                Vector3 pos = rootNode.position;
+                Vector3 rot = rootNode.rotation.eulerAngles;
+
+                VNyanInterface.VNyanInterface.VNyanParameter.setVNyanParameterFloat("_av_pos_x", rootNode.position.x);
+                VNyanInterface.VNyanInterface.VNyanParameter.setVNyanParameterFloat("_av_pos_y", rootNode.position.y);
+                VNyanInterface.VNyanInterface.VNyanParameter.setVNyanParameterFloat("_av_pos_z", rootNode.position.z);
+
+                VNyanInterface.VNyanInterface.VNyanParameter.setVNyanParameterFloat("_av_rot_x", rootNode.rotation.eulerAngles.x);
+                VNyanInterface.VNyanInterface.VNyanParameter.setVNyanParameterFloat("_av_rot_y", rootNode.rotation.eulerAngles.y);
+                VNyanInterface.VNyanInterface.VNyanParameter.setVNyanParameterFloat("_av_rot_z", rootNode.rotation.eulerAngles.z);
             }
 
             if (animator == null || avatar == null || !senderReady)
@@ -114,7 +138,8 @@ namespace JayoVMCPlugin
 
             Bundle boneBundle = new Bundle(Timestamp.Now);
             Bundle blendshapeBundle = new Bundle(Timestamp.Now);
-            var rootNode = animator.GetBoneTransform(HumanBodyBones.Hips); //probably this
+
+            rootNode = animator.GetBoneTransform(HumanBodyBones.Hips);
 
             sendVMC(new Message("/VMC/Ext/Root/Pos",
                "root",
@@ -129,66 +154,102 @@ namespace JayoVMCPlugin
                 rootNode.rotation.w
             ));
 
-            foreach (HumanBodyBones bone in System.Enum.GetValues(typeof(HumanBodyBones)))
+            if (!sendRawBones)
             {
-                if (bone == HumanBodyBones.LastBone) continue;
-                if (bone == HumanBodyBones.Hips) continue;
-
-                ///VMC/Ext/Bone/Pos (string){name} (float){p.x} (float){p.y} (float){p.z} (float){q.x} (float){q.y} (float){q.z} (float){q.w}
-
-                Transform boneTransform = animator.GetBoneTransform(bone);
-                if (boneTransform != null)
+                foreach (HumanBodyBones bone in System.Enum.GetValues(typeof(HumanBodyBones)))
                 {
-                    if(sendBoneScale)
+                    if (bone == HumanBodyBones.LastBone) continue;
+                    if (bone == HumanBodyBones.Hips) continue;
+
+                    ///VMC/Ext/Bone/Pos (string){name} (float){p.x} (float){p.y} (float){p.z} (float){q.x} (float){q.y} (float){q.z} (float){q.w}
+
+                    Transform boneTransform = animator.GetBoneTransform(bone);
+                    if (boneTransform != null)
                     {
-                        if (boneScales.ContainsKey(bone.ToString()) && Vector3.Distance(boneScales[bone.ToString()], boneTransform.localScale) > 0)
+                        if (sendBoneScale)
                         {
-                            var scaleMessage = new Message("/NyaVMC/Ext/Bone/Scale",
-                                bone.ToString(),
-
-                                boneTransform.localScale.x,
-                                boneTransform.localScale.y,
-                                boneTransform.localScale.z
-                            );
-
-                            if (noBundle)
+                            if (boneScales.ContainsKey(bone.ToString()) && Vector3.Distance(boneScales[bone.ToString()], boneTransform.localScale) > 0)
                             {
-                                sendVMC(scaleMessage);
+                                var scaleMessage = new Message("/NyaVMC/Ext/Bone/Scale",
+                                    bone.ToString(),
+
+                                    boneTransform.localScale.x,
+                                    boneTransform.localScale.y,
+                                    boneTransform.localScale.z
+                                );
+
+                                if (noBundle)
+                                {
+                                    sendVMC(scaleMessage);
+                                }
+                                else
+                                {
+                                    boneBundle.Add(scaleMessage);
+                                }
                             }
-                            else
-                            {
-                                boneBundle.Add(scaleMessage);
-                            }
+                            boneScales[bone.ToString()] = boneTransform.localScale;
                         }
-                        boneScales[bone.ToString()] = boneTransform.localScale;
+
+                        var boneMessage = new Message("/VMC/Ext/Bone/Pos",
+                            bone.ToString(),
+
+                            boneTransform.localPosition.x,
+                            boneTransform.localPosition.y,
+                            boneTransform.localPosition.z,
+
+                            boneTransform.localRotation.x,
+                            boneTransform.localRotation.y,
+                            boneTransform.localRotation.z,
+                            boneTransform.localRotation.w
+                        );
+
+                        if (noBundle)
+                        {
+                            sendVMC(boneMessage);
+                        }
+                        else
+                        {
+                            boneBundle.Add(boneMessage);
+                        }
                     }
+                }
+                if (!noBundle)
+                {
+                    sendVMC(boneBundle);
+                }
+            }
+            else
+            {
+                foreach(KeyValuePair<string,Transform> boneEntry in rawBones)
+                {
+                    var boneMessage = new Message("/NyaVMC/Ext/RawBone/Pos",
+                        boneEntry.Key,
 
-                    var boneMessage = new Message("/VMC/Ext/Bone/Pos",
-                        bone.ToString(),
+                        boneEntry.Value.localPosition.x,
+                        boneEntry.Value.localPosition.y,
+                        boneEntry.Value.localPosition.z,
 
-                        boneTransform.localPosition.x,
-                        boneTransform.localPosition.y,
-                        boneTransform.localPosition.z,
-
-                        boneTransform.localRotation.x,
-                        boneTransform.localRotation.y,
-                        boneTransform.localRotation.z,
-                        boneTransform.localRotation.w
+                        boneEntry.Value.localRotation.x,
+                        boneEntry.Value.localRotation.y,
+                        boneEntry.Value.localRotation.z,
+                        boneEntry.Value.localRotation.w
                     );
-                    
-                    if(noBundle)
+
+                    if (noBundle)
                     {
                         sendVMC(boneMessage);
-                    } else
+                    }
+                    else
                     {
                         boneBundle.Add(boneMessage);
                     }
                 }
+                if (!noBundle)
+                {
+                    sendVMC(boneBundle);
+                }
             }
-            if (!noBundle)
-            {
-                sendVMC(boneBundle);
-            }
+
             foreach (KeyValuePair<string, float> blendshape in blendshapes)
             {
                 var blendMessage = new Message("/VMC/Ext/Blend/Val", blendshape.Key, blendshape.Value);
@@ -371,6 +432,26 @@ namespace JayoVMCPlugin
             foreach (KeyValuePair<string, Animator> item in childAnimators)
             {
                 RetrieveAnimatorParameters(item.Key, item.Value);
+            }
+        }
+
+        private void RetrieveRawBones()
+        {
+            childAnimators = new Dictionary<string, Animator>();
+            var rootNode = animator.GetBoneTransform(HumanBodyBones.Hips);
+            string rootPath = getObjectPath(rootNode, avatar.transform);
+            TraverseArmatureNode(rootNode.gameObject, rootPath, true);
+
+        }
+
+        private void TraverseArmatureNode(GameObject currentNode, string relativePath, bool noSave = false)
+        {
+            if (!noSave) rawBones[relativePath] = currentNode.transform;
+
+            foreach (Transform child in currentNode.transform)
+            {
+                string childPath = relativePath + "/" + child.name;
+                TraverseArmatureNode(child.gameObject, childPath);
             }
         }
 

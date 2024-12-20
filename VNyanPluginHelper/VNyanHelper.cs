@@ -208,6 +208,9 @@ namespace JayoVMCPlugin.VNyanPluginHelper
                 return VNyanInterface.VNyanInterface.VNyanAvatar.getAvatarObject() as GameObject;
             }
             return null;
+
+            GameObject avatar = VNyanInterface.VNyanInterface.VNyanAvatar.getAvatarObject() as GameObject;
+            SkinnedMeshRenderer[] smrs = avatar.GetComponentsInChildren<SkinnedMeshRenderer>();
         }
 
         public void registerTriggerListener(ITriggerHandler triggerHandler)

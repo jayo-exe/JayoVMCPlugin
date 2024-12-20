@@ -10,7 +10,7 @@
 
 	<ItemGroup>
 	  <Reference Include="Assembly-CSharp">
-	    <HintPath>E:\VNyan1.4.5\VNyan_Data\Managed\Assembly-CSharp.dll</HintPath>
+	    <HintPath>E:\vNyan\VNyan_Data\Managed\Assembly-CSharp.dll</HintPath>
 	  </Reference>
 	  <Reference Include="Newtonsoft.Json">
 	    <HintPath>E:\vNyan\VNyan_Data\Managed\Newtonsoft.Json.dll</HintPath>
@@ -49,7 +49,7 @@
 	    <HintPath>E:\vNyan\VNyan_Data\Managed\uOSC.Runtime.dll</HintPath>
 	  </Reference>
 	  <Reference Include="VNyanInterface">
-	    <HintPath>E:\VNyan1.4.5\VNyan_Data\Managed\VNyanInterface.dll</HintPath>
+	    <HintPath>E:\vNyan\VNyan_Data\Managed\VNyanInterface.dll</HintPath>
 	  </Reference>
 	  <Reference Include="VRM">
 	    <HintPath>E:\vNyan\VNyan_Data\Managed\VRM.dll</HintPath>

@@ -29,6 +29,7 @@ namespace JayoVMCPlugin
         private GameObject sendBoneScaleToggle;
         private GameObject sendTriggersToggle;
         private GameObject sendRateInfoToggle;
+        private GameObject sendRawBonesToggle;
         private GameObject sendAnimParamsToggle;
         private InputField PortInput;
         private InputField AddressInput;
@@ -93,7 +94,7 @@ namespace JayoVMCPlugin
 
                 try
                 {
-                    Debug.Log($"Preparing Plugin Window");
+                    Debug.Log($"Preparing Plugin Window beep");
 
                     updater.PrepareUpdateUI(
                         window.transform.Find("Panel/VersionText").gameObject,
@@ -136,6 +137,10 @@ namespace JayoVMCPlugin
                     sendRateInfoToggle = window.transform.Find("Panel/ExtendedFeatures/SendTimingToggle").gameObject;
                     sendRateInfoToggle.GetComponent<Toggle>().onValueChanged.AddListener((v) => { vmcManager.sendRateInfo = v; });
                     sendRateInfoToggle.GetComponent<Toggle>().SetIsOnWithoutNotify(vmcManager.sendRateInfo);
+
+                    sendRawBonesToggle = window.transform.Find("Panel/ExtendedFeatures/SendRawBonesToggle").gameObject;
+                    sendRawBonesToggle.GetComponent<Toggle>().onValueChanged.AddListener((v) => { vmcManager.sendRawBones = v; });
+                    sendRawBonesToggle.GetComponent<Toggle>().SetIsOnWithoutNotify(vmcManager.sendRawBones);
                 }
                 catch (Exception e)
                 {
@@ -259,6 +264,10 @@ namespace JayoVMCPlugin
                 string sendRateInfo;
                 settings.TryGetValue("VMCSendRateInfo", out sendRateInfo);
                 if (sendRateInfo != null) vmcManager.sendRateInfo = Boolean.Parse(sendRateInfo);
+
+                string sendRawBones;
+                settings.TryGetValue("VMCSendRawBones", out sendRawBones);
+                if (sendRawBones != null) vmcManager.sendRawBones = Boolean.Parse(sendRawBones);
             }
         }
 
@@ -274,6 +283,7 @@ namespace JayoVMCPlugin
             settings["VMCSendTriggers"] = vmcManager.sendTriggers.ToString();
             settings["VMCSendAnimParams"] = vmcManager.sendAnimParams.ToString();
             settings["VMCSendRateInfo"] = vmcManager.sendRateInfo.ToString();
+            settings["VMCSendRawBones"] = vmcManager.sendRawBones.ToString();
 
 
             _VNyanHelper.savePluginSettingsData("JayoVMCPlugin.cfg", settings);

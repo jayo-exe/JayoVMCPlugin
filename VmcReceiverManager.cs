@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.XR;
 using uOSC;
 using VRM;
 
@@ -16,6 +17,7 @@ namespace JayoVMCPlugin
 
         public bool AnchorToStage;
         public bool BoneRotationsOnly;
+        public bool UseRawBones;
 
         private Animator animator = null;
         private Dictionary<string, Animator> childAnimators = new Dictionary<string, Animator>();
@@ -26,6 +28,7 @@ namespace JayoVMCPlugin
         private Dictionary<BlendShapeKey, float> prevBlends = new Dictionary<BlendShapeKey, float>();
         private Dictionary<BlendShapeKey, float> currentBlends = new Dictionary<BlendShapeKey, float>();
         private Dictionary<string, BlendShapeKey> ValidBlendshapes = new Dictionary<string, BlendShapeKey>();
+        private Dictionary<string, Transform> rawBones = new Dictionary<string, Transform>();
 
         private Dictionary<string, Vector3> prevBonePositions = new Dictionary<string, Vector3>();
         private Dictionary<string, Vector3> prevBoneScales = new Dictionary<string, Vector3>();
@@ -68,7 +71,6 @@ namespace JayoVMCPlugin
                             ValidBlendshapes.Add(b.Key.Name.ToLower(), b.Key);
                         }
                     }
-
                 }
 
                 if (currentFrameInterval < updateFrameInterval) currentFrameInterval++;
@@ -89,41 +91,80 @@ namespace JayoVMCPlugin
                     RootNode.transform.rotation = rot;
                 }
 
-                foreach (HumanBodyBones bone in System.Enum.GetValues(typeof(HumanBodyBones)))
+                if(!UseRawBones)
                 {
-                    if (bone == HumanBodyBones.LastBone) continue;
-                    if (bone == HumanBodyBones.Hips) continue;
-
-                    string boneName = bone.ToString();
-                    if (!prevBoneRotations.ContainsKey(boneName)) continue;
-                    if (!newBoneRotations.ContainsKey(boneName)) continue;
-                    //Debug.Log($"LERP POS {boneName}; {prevBonePositions[boneName].ToString("F6")}; {newBonePositions[boneName].ToString("F6")}; {Vector3.Distance(prevBonePositions[boneName], newBonePositions[boneName])}; {lerpFactor}");
-                    //Debug.Log($"LERP ROT {boneName}; {prevBoneRotations[boneName].ToString("F6")}; {newBoneRotations[boneName].ToString("F6")}; {lerpFactor}");
-                    pos = Vector3.Lerp(prevBonePositions[boneName], newBonePositions[boneName], lerpFactor);
-                    rot = Quaternion.Lerp(prevBoneRotations[boneName], newBoneRotations[boneName], lerpFactor);
-
-                    Transform boneTransform = animator.GetBoneTransform(bone);
-                    if (boneTransform != null)
+                    foreach (HumanBodyBones bone in System.Enum.GetValues(typeof(HumanBodyBones)))
                     {
-                        if (!BoneRotationsOnly)
+                        if (bone == HumanBodyBones.LastBone) continue;
+                        if (bone == HumanBodyBones.Hips) continue;
+
+                        string boneName = bone.ToString();
+                        if (!prevBoneRotations.ContainsKey(boneName)) continue;
+                        if (!newBoneRotations.ContainsKey(boneName)) continue;
+                        //Debug.Log($"LERP POS {boneName}; {prevBonePositions[boneName].ToString("F6")}; {newBonePositions[boneName].ToString("F6")}; {Vector3.Distance(prevBonePositions[boneName], newBonePositions[boneName])}; {lerpFactor}");
+                        //Debug.Log($"LERP ROT {boneName}; {prevBoneRotations[boneName].ToString("F6")}; {newBoneRotations[boneName].ToString("F6")}; {lerpFactor}");
+                        pos = Vector3.Lerp(prevBonePositions[boneName], newBonePositions[boneName], lerpFactor);
+                        rot = Quaternion.Lerp(prevBoneRotations[boneName], newBoneRotations[boneName], lerpFactor);
+
+                        Transform boneTransform = animator.GetBoneTransform(bone);
+                        if (boneTransform != null)
                         {
-                            boneTransform.localPosition = pos;
+                            if (!BoneRotationsOnly)
+                            {
+                                boneTransform.localPosition = pos;
+                            }
+
+                            boneTransform.localRotation = rot;
+
+                            if (!prevBoneScales.ContainsKey(boneName)) continue;
+                            if (!newBoneScales.ContainsKey(boneName)) continue;
+
+                            Vector3 scale = Vector3.Lerp(prevBoneScales[boneName], newBoneScales[boneName], lerpFactor);
+                            boneTransform.localScale = scale;
+                            if (lerpFactor == 1.00)
+                            {
+                                prevBoneScales.Remove(boneName);
+                                newBoneScales.Remove(boneName);
+                            }
                         }
+                    }
+                } else
+                {
+                    foreach (KeyValuePair<string,Transform> boneEntry in rawBones)
+                    {
 
-                        boneTransform.localRotation = rot;
+                        string boneName = boneEntry.Key;
+                        if (!prevBoneRotations.ContainsKey(boneName)) continue;
+                        if (!newBoneRotations.ContainsKey(boneName)) continue;
+                        //Debug.Log($"LERP POS {boneName}; {prevBonePositions[boneName].ToString("F6")}; {newBonePositions[boneName].ToString("F6")}; {Vector3.Distance(prevBonePositions[boneName], newBonePositions[boneName])}; {lerpFactor}");
+                        //Debug.Log($"LERP ROT {boneName}; {prevBoneRotations[boneName].ToString("F6")}; {newBoneRotations[boneName].ToString("F6")}; {lerpFactor}");
+                        pos = Vector3.Lerp(prevBonePositions[boneName], newBonePositions[boneName], lerpFactor);
+                        rot = Quaternion.Lerp(prevBoneRotations[boneName], newBoneRotations[boneName], lerpFactor);
 
-                        if (!prevBoneScales.ContainsKey(boneName)) continue;
-                        if (!newBoneScales.ContainsKey(boneName)) continue;
-
-                        Vector3 scale = Vector3.Lerp(prevBoneScales[boneName], newBoneScales[boneName], lerpFactor);
-                        boneTransform.localScale = scale;
-                        if(lerpFactor == 1.00)
+                        Transform boneTransform = boneEntry.Value;
+                        if (boneTransform != null)
                         {
-                            prevBoneScales.Remove(boneName);
-                            newBoneScales.Remove(boneName);
+                            if (!BoneRotationsOnly)
+                            {
+                                boneTransform.localPosition = pos;
+                            }
+
+                            boneTransform.localRotation = rot;
+
+                            if (!prevBoneScales.ContainsKey(boneName)) continue;
+                            if (!newBoneScales.ContainsKey(boneName)) continue;
+
+                            Vector3 scale = Vector3.Lerp(prevBoneScales[boneName], newBoneScales[boneName], lerpFactor);
+                            boneTransform.localScale = scale;
+                            if (lerpFactor == 1.00)
+                            {
+                                prevBoneScales.Remove(boneName);
+                                newBoneScales.Remove(boneName);
+                            }
                         }
                     }
                 }
+                
 
                 if (blendShapeProxy != null)
                 {
@@ -164,7 +205,8 @@ namespace JayoVMCPlugin
                 }
 
                 refetchChildAnimators();
-                
+                RetrieveRawBones();
+
                 //disable anim param links on models attached to receivers
                 AnimParamLink[] paramLinks = Model.GetComponentsInChildren<AnimParamLink>(true);
                 foreach (AnimParamLink paramLink in paramLinks) paramLink.enabled = false;
@@ -196,7 +238,7 @@ namespace JayoVMCPlugin
 
             }
 
-            else if (message.address == "/VMC/Ext/Bone/Pos")
+            else if (message.address == "/VMC/Ext/Bone/Pos" && !UseRawBones)
             {
 
 
@@ -256,6 +298,21 @@ namespace JayoVMCPlugin
                 //Debug.Log($"Receiving Trigger Details. name: {triggerName} | v1: {value1}, v2: {value2}, v3: {value3} | t1: {text1}, t2: {text2}, t3: {text3}");
 
                 VNyanInterface.VNyanInterface.VNyanTrigger.callTrigger(triggerName, value1, value2, value3, text1, text2, text3);
+            }
+            else if (message.address == "/NyaVMC/Ext/RawBone/Pos" && UseRawBones)
+            {
+                //Debug.Log("Getting raw bone!");
+                Vector3 pos = new Vector3((float)message.values[1], (float)message.values[2], (float)message.values[3]);
+                Quaternion rot = new Quaternion((float)message.values[4], (float)message.values[5], (float)message.values[6], (float)message.values[7]);
+                string boneName = (string) message.values[0];
+                var t = rawBones[boneName];
+                if (t != null)
+                {
+                    if (newBonePositions.ContainsKey(boneName)) prevBonePositions[boneName] = new Vector3(newBonePositions[boneName].x, newBonePositions[boneName].y, newBonePositions[boneName].z);
+                    if (newBoneRotations.ContainsKey(boneName)) prevBoneRotations[boneName] = new Quaternion(newBoneRotations[boneName].x, newBoneRotations[boneName].y, newBoneRotations[boneName].z, newBoneRotations[boneName].w);
+                    newBonePositions[boneName] = pos;
+                    newBoneRotations[boneName] = rot;
+                }
             }
             else if (message.address == "/NyaVMC/Ext/Bone/Scale")
             {
@@ -332,6 +389,26 @@ namespace JayoVMCPlugin
             {
                 string relativePath = getObjectPath(animators[i].transform, Model.transform);
                 childAnimators[relativePath] = animators[i];
+            }
+        }
+
+        private void RetrieveRawBones()
+        {
+            childAnimators = new Dictionary<string, Animator>();
+            var rootNode = animator.GetBoneTransform(HumanBodyBones.Hips);
+            string rootPath = getObjectPath(rootNode, Model.transform);
+            TraverseArmatureNode(rootNode.gameObject, rootPath, true);
+
+        }
+
+        private void TraverseArmatureNode(GameObject currentNode, string relativePath, bool noSave = false)
+        {
+            if (!noSave) rawBones[relativePath] = currentNode.transform;
+
+            foreach (Transform child in currentNode.transform)
+            {
+                string childPath = relativePath + "/" + child.name;
+                TraverseArmatureNode(child.gameObject, childPath);
             }
         }
     }
